@@ -16,7 +16,7 @@ jobs:
       with:
         submodules: recursive
     - name: configure
-      run: cmake --preset release-win32
+      run: cmake --preset release-win32 "-DSERVER_ADDRESS=${{ secrets.SERVER_ADDRESS }}" "-DSERVER_PORT=${{ secrets.SERVER_PORT }}"
     - name: build
       run: cmake --build --preset release-win32
     - name: release

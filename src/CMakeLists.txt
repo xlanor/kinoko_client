@@ -15,6 +15,13 @@ add_library(injector SHARED
         debug.cpp
 )
 
+if (DEFINED SERVER_ADDRESS)
+    target_compile_definitions(injector PRIVATE CONFIG_SERVER_ADDRESS="${SERVER_ADDRESS}")
+endif ()
+if (DEFINED SERVER_PORT)
+    target_compile_definitions(injector PRIVATE CONFIG_SERVER_PORT=${SERVER_PORT})
+endif ()
+
 target_precompile_headers(injector PRIVATE pch.h)
 
 target_include_directories(injector PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

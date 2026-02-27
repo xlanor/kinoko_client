@@ -14,6 +14,10 @@ void ProcessCommandLine() {
         g_sServerAddress = reinterpret_cast<char*>(malloc(strlen(sAddress) + 1));
         strcpy_s(g_sServerAddress, strlen(sAddress) + 1, sAddress);
         g_nServerPort = nPort;
+    } else {
+        g_sServerAddress = reinterpret_cast<char*>(malloc(strlen(CONFIG_SERVER_ADDRESS) + 1));
+        strcpy_s(g_sServerAddress, strlen(CONFIG_SERVER_ADDRESS) + 1, CONFIG_SERVER_ADDRESS);
+        g_nServerPort = CONFIG_SERVER_PORT;
     }
 }
 
