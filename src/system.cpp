@@ -185,32 +185,37 @@ BOOL WINAPI FileTimeToSystemTime_hook(const FILETIME* lpFileTime, LPSYSTEMTIME l
 
 void AttachSystemHooks() {
     const bool bWine = IsWine();
+    DEBUG_MESSAGE("AttachSystemHooks: Wine=%d", bWine);
 
-    // These hooks patch Wine/Windows API functions via Detours.
-    // Under Wine, some may fail — skip gracefully.
     if (SetUnhandledExceptionFilter_orig)
         ATTACH_HOOK(SetUnhandledExceptionFilter_orig, SetUnhandledExceptionFilter_hook);
+    DEBUG_MESSAGE("AttachSystemHooks: SetUnhandledExceptionFilter done");
 
     if (CreateMutexA_orig)
         ATTACH_HOOK(CreateMutexA_orig, CreateMutexA_hook);
+    DEBUG_MESSAGE("AttachSystemHooks: CreateMutexA done");
 
     if (CreateWindowExA_orig)
         ATTACH_HOOK(CreateWindowExA_orig, CreateWindowExA_hook);
+    DEBUG_MESSAGE("AttachSystemHooks: CreateWindowExA done");
 
     if (RegCreateKeyExA_orig)
         ATTACH_HOOK(RegCreateKeyExA_orig, RegCreateKeyExA_hook);
+    DEBUG_MESSAGE("AttachSystemHooks: RegCreateKeyExA done");
 
-    // For network redirection: use WSPStartup on native Windows,
-    // fall back to WS2_32 connect hook on Wine/CrossOver
     if (!bWine && WSPStartup_orig) {
         ATTACH_HOOK(WSPStartup_orig, WSPStartup_hook);
+        DEBUG_MESSAGE("AttachSystemHooks: WSPStartup done");
     } else {
         if (connect_orig)
             ATTACH_HOOK(connect_orig, connect_hook);
+        DEBUG_MESSAGE("AttachSystemHooks: connect done");
         if (getpeername_orig)
             ATTACH_HOOK(getpeername_orig, getpeername_hook);
+        DEBUG_MESSAGE("AttachSystemHooks: getpeername done");
     }
 
     if (FileTimeToSystemTime_orig)
         ATTACH_HOOK(FileTimeToSystemTime_orig, FileTimeToSystemTime_hook);
+    DEBUG_MESSAGE("AttachSystemHooks: complete");
 }

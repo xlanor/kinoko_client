@@ -46,13 +46,21 @@ void AttachElementalDamageMod();
 void AttachExceptionHandler();
 
 inline void AttachClientHooks() {
+    DebugMessage("AttachClientHooks: start");
     AttachClientBypass();
+    DebugMessage("AttachClientHooks: bypass done");
     AttachClientHelper();
+    DebugMessage("AttachClientHooks: helper done");
     AttachClientInlink();
+    DebugMessage("AttachClientHooks: inlink done");
     AttachSystemOptionMod();
+    DebugMessage("AttachClientHooks: sysopt done");
     AttachTemporaryStatMod();
+    DebugMessage("AttachClientHooks: tempstat done");
     AttachElementalDamageMod();
+    DebugMessage("AttachClientHooks: elemdmg done");
     AttachExceptionHandler();
+    DebugMessage("AttachClientHooks: complete");
 }
 
 
