@@ -24,13 +24,9 @@ void ProcessCommandLine() {
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
     switch (fdwReason) {
     case DLL_PROCESS_ATTACH:
-        MessageBoxA(NULL, "DllMain: start", "Debug", MB_OK);
         DisableThreadLibraryCalls(hinstDLL);
-        MessageBoxA(NULL, "DllMain: before ProcessCommandLine", "Debug", MB_OK);
         ProcessCommandLine();
-        MessageBoxA(NULL, "DllMain: before AttachSystemHooks", "Debug", MB_OK);
         AttachSystemHooks();
-        MessageBoxA(NULL, "DllMain: done", "Debug", MB_OK);
         break;
     case DLL_PROCESS_DETACH:
     case DLL_THREAD_ATTACH:

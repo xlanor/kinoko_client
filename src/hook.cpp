@@ -6,6 +6,10 @@
 
 
 bool AttachHook(void** ppTarget, void* pDetour) {
+    if (!ppTarget || !*ppTarget || !pDetour) {
+        DEBUG_MESSAGE("AttachHook skipped: null target or detour");
+        return false;
+    }
     LONG result;
     if (result = DetourTransactionBegin(); result != NO_ERROR) {
         DEBUG_MESSAGE("DetourTransactionBegin failed with : %d", result);
@@ -43,11 +47,20 @@ void* GetAddress(const char* sModuleName, const char* sProcName) {
     if (!hModule) {
         hModule = LoadLibraryA(sModuleName);
     }
+    if (!hModule) {
+        DEBUG_MESSAGE("Could not load module %s", sModuleName);
+        return nullptr;
+    }
     FARPROC result = GetProcAddress(hModule, sProcName);
     if (!result) {
         DEBUG_MESSAGE("Could not resolve address for %s in module %s", sProcName, sModuleName);
     }
     return reinterpret_cast<void*>(result);
+}
+
+bool IsWine() {
+    HMODULE hNtdll = GetModuleHandleA("ntdll.dll");
+    return hNtdll && GetProcAddress(hNtdll, "wine_get_version") != nullptr;
 }
 
 

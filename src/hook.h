@@ -68,6 +68,8 @@ constexpr auto CastHook(T fn) -> void* {
 
 bool AttachHook(void** ppTarget, void* pDetour);
 
+bool IsWine();
+
 void* VMTHook(void* pInstance, void* pDetour, size_t uIndex);
 
 void* GetAddress(const char* sModuleName, const char* sProcName);

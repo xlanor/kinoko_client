@@ -108,6 +108,7 @@ LSTATUS WINAPI RegCreateKeyExA_hook(HKEY hKey, LPCSTR lpSubKey, DWORD Reserved, 
 }
 
 
+// WSPStartup hook (native Windows)
 typedef decltype(&WSPStartup) WSPStartup_t;
 static WSPStartup_t WSPStartup_orig = reinterpret_cast<WSPStartup_t>(GetAddress("MSWSOCK", "WSPStartup"));
 static WSPPROC_TABLE g_ProcTable;
@@ -140,6 +141,36 @@ int WINAPI WSPStartup_hook(WORD wVersionRequested, LPWSPDATA lpWSPData, LPWSAPRO
     return result;
 }
 
+// WS2_32 connect hook (Wine/CrossOver fallback)
+typedef int (WINAPI *connect_t)(SOCKET, const struct sockaddr*, int);
+static connect_t connect_orig = reinterpret_cast<connect_t>(GetAddress("WS2_32", "connect"));
+
+typedef int (WINAPI *getpeername_t)(SOCKET, struct sockaddr*, int*);
+static getpeername_t getpeername_orig = reinterpret_cast<getpeername_t>(GetAddress("WS2_32", "getpeername"));
+
+int WINAPI connect_hook(SOCKET s, const struct sockaddr* name, int namelen) {
+    if (name->sa_family == AF_INET) {
+        char sName[INET_ADDRSTRLEN];
+        InetNtopA(AF_INET, &((sockaddr_in*)name)->sin_addr, sName, INET_ADDRSTRLEN);
+        if (strstr(sName, CONFIG_NEXON_SEARCH)) {
+            g_uNexonAddress = ((sockaddr_in*)name)->sin_addr.S_un.S_addr;
+            InetPtonA(AF_INET, g_sServerAddress ? g_sServerAddress : CONFIG_SERVER_ADDRESS, &((sockaddr_in*)name)->sin_addr.S_un.S_addr);
+            if (g_nServerPort) {
+                ((sockaddr_in*)name)->sin_port = htons(static_cast<u_short>(g_nServerPort));
+            }
+        }
+    }
+    return connect_orig(s, name, namelen);
+}
+
+int WINAPI getpeername_hook(SOCKET s, struct sockaddr* name, int* namelen) {
+    int result = getpeername_orig(s, name, namelen);
+    if (result == 0 && name->sa_family == AF_INET && g_uNexonAddress != 0) {
+        ((sockaddr_in*)name)->sin_addr.S_un.S_addr = g_uNexonAddress;
+    }
+    return result;
+}
+
 
 typedef decltype(&FileTimeToSystemTime) FileTimeToSystemTime_t;
 static FileTimeToSystemTime_t FileTimeToSystemTime_orig = reinterpret_cast<FileTimeToSystemTime_t>(GetAddress("KERNEL32", "FileTimeToSystemTime"));
@@ -153,10 +184,33 @@ BOOL WINAPI FileTimeToSystemTime_hook(const FILETIME* lpFileTime, LPSYSTEMTIME l
 
 
 void AttachSystemHooks() {
-    ATTACH_HOOK(SetUnhandledExceptionFilter_orig, SetUnhandledExceptionFilter_hook);
-    ATTACH_HOOK(CreateMutexA_orig, CreateMutexA_hook);
-    ATTACH_HOOK(CreateWindowExA_orig, CreateWindowExA_hook);
-    ATTACH_HOOK(RegCreateKeyExA_orig, RegCreateKeyExA_hook);
-    ATTACH_HOOK(WSPStartup_orig, WSPStartup_hook);
-    ATTACH_HOOK(FileTimeToSystemTime_orig, FileTimeToSystemTime_hook);
+    const bool bWine = IsWine();
+
+    // These hooks patch Wine/Windows API functions via Detours.
+    // Under Wine, some may fail — skip gracefully.
+    if (SetUnhandledExceptionFilter_orig)
+        ATTACH_HOOK(SetUnhandledExceptionFilter_orig, SetUnhandledExceptionFilter_hook);
+
+    if (CreateMutexA_orig)
+        ATTACH_HOOK(CreateMutexA_orig, CreateMutexA_hook);
+
+    if (CreateWindowExA_orig)
+        ATTACH_HOOK(CreateWindowExA_orig, CreateWindowExA_hook);
+
+    if (RegCreateKeyExA_orig)
+        ATTACH_HOOK(RegCreateKeyExA_orig, RegCreateKeyExA_hook);
+
+    // For network redirection: use WSPStartup on native Windows,
+    // fall back to WS2_32 connect hook on Wine/CrossOver
+    if (!bWine && WSPStartup_orig) {
+        ATTACH_HOOK(WSPStartup_orig, WSPStartup_hook);
+    } else {
+        if (connect_orig)
+            ATTACH_HOOK(connect_orig, connect_hook);
+        if (getpeername_orig)
+            ATTACH_HOOK(getpeername_orig, getpeername_hook);
+    }
+
+    if (FileTimeToSystemTime_orig)
+        ATTACH_HOOK(FileTimeToSystemTime_orig, FileTimeToSystemTime_hook);
 }
