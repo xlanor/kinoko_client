@@ -51,8 +51,12 @@ inline void AttachClientHooks() {
     DebugMessage("AttachClientHooks: bypass done");
     AttachClientHelper();
     DebugMessage("AttachClientHooks: helper done");
-    AttachClientInlink();
-    DebugMessage("AttachClientHooks: inlink done");
+    if (!IsWine()) {
+        AttachClientInlink();
+        DebugMessage("AttachClientHooks: inlink done");
+    } else {
+        DebugMessage("AttachClientHooks: inlink SKIPPED (Wine)");
+    }
     AttachSystemOptionMod();
     DebugMessage("AttachClientHooks: sysopt done");
     AttachTemporaryStatMod();
